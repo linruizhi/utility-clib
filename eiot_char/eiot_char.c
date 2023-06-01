@@ -31,7 +31,82 @@ void reverseString(char *s, int sSize) {
     }
 }
 
+/*
+*********************************************************************************************************
+*	函 数 名: htoa
+*	功能说明: hex数据转ASCII码
+*	形    参: ASCII数据地址,hex数据地址,ASCII数据长度
+*	返 回 值: hex长度
+*********************************************************************************************************
+*/
+int htoa(const unsigned char* hex, unsigned char* asc, int hex_len )
+{
+    int i = 0;
+    int cnt;
+    int tot_len = 0;
 
+    if (  hex == 0 || asc == 0  ) {
+        return tot_len;
+    }
+    tot_len = hex_len*2;
+    for ( i = 0; i < hex_len; i++ ) {
+        cnt = ( hex[i] >> 4 );
+        printf("%x",cnt);
+        if ( cnt > 9 ) {
+            asc[2 * i] =  cnt + 65 - 0x0A;
+        } else {
+            asc[2 * i] =  cnt + 0x30;
+        }
 
+        cnt = ( hex[i] & 0x0F );
+        printf("%x:",cnt);
+        if ( cnt > 9 ) {
+            asc[2 * i + 1] =  cnt + 65 - 0x0A;
+        } else {
+            asc[2 * i + 1] =  cnt + 0x30;
+        }
+    }
+    return tot_len;
+}
+
+/*
+*********************************************************************************************************
+*	函 数 名: atoh
+*	功能说明: ASCII码转hex数据
+*	形    参: ASCII数据地址,hex数据地址,ASCII数据长度
+*	返 回 值: hex长度
+*********************************************************************************************************
+*/
+int atoh( const unsigned char* asc,unsigned char* hex, int asc_len )
+{
+    char temp;
+    int i;
+
+    if ( hex == 0 || asc == 0 ) {
+        return -1;
+    }
+    asc_len /= 2;
+    for ( i = 0; i < asc_len; i++ )
+    {
+        temp = asc[2 * i];
+        if ( temp >= '0' && temp <= '9' ) {
+            hex[i] = ( ( temp - '0' ) << 4 );
+        } else if ( temp >= 'A' && temp <= 'F' ) {
+            hex[i] = ( ( temp - '7' ) << 4 );
+        } else if ( temp >= 'a' && temp <= 'f' ) {
+            hex[i] = ( ( temp - 'W' ) << 4 );
+        }
+        
+        temp = asc[2 * i + 1];
+        if ( temp >= '0' && temp <= '9' ) {
+            hex[i] += ( temp - '0' );
+        } else if( temp >= 'A' && temp <= 'F' ) {
+            hex[i] += ( temp - '7' );
+        } else {
+            hex[i] += ( temp - 'W' );
+        }
+    }
+    return asc_len;
+}
 
 
