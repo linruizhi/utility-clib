@@ -51,7 +51,6 @@ int htoa(const unsigned char* hex, unsigned char* asc, int hex_len )
     tot_len = hex_len*2;
     for ( i = 0; i < hex_len; i++ ) {
         cnt = ( hex[i] >> 4 );
-        printf("%x",cnt);
         if ( cnt > 9 ) {
             asc[2 * i] =  cnt + 65 - 0x0A;
         } else {
@@ -59,7 +58,6 @@ int htoa(const unsigned char* hex, unsigned char* asc, int hex_len )
         }
 
         cnt = ( hex[i] & 0x0F );
-        printf("%x:",cnt);
         if ( cnt > 9 ) {
             asc[2 * i + 1] =  cnt + 65 - 0x0A;
         } else {
