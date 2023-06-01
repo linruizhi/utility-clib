@@ -30,15 +30,7 @@ void reverseString(char *s, int sSize) {
         swap(s + left, s + right);
     }
 }
-#include <stdio.h>
-int main(void)
-{
-    int i = 0x23050201;
-    printf("%04X\r\n",i);
-    reverseString((char*)&i,sizeof(i));
-    printf("%04X\r\n",i);
-    return 0;
-}
+
 
 
 
