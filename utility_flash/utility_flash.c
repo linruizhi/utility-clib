@@ -1,31 +1,24 @@
 
+#include "utility_flash.h"
 
-#include "perif_flash.h"
-#include "eiot_crc/eiot_crc.h"
-
-#include "libarch.h"
-
-
+/* 外部FLash地址 */
 #define EXTERNAL_FLASH_ADDRESS_START    0x00000000
 #define EXTERNAL_FLASH_ADDRESS_END      0x00800000
-
+/* 内部FLash地址 */
 #define INTERNAL_FLASH_ADDRESS_START    0x08000000
 #define INTERNAL_FLASH_ADDRESS_END      0x08040000
-
+/* 内部Ram地址 */
 #define INTERNAL_RAM_ADDRESS_START      0x20000000
 #define INTERNAL_RAM_ADDRESS_END        0x20020000
-
+/* 外部Flash地址范围判断 */
 #define _IS_EXTERNAL_FLASH( addr ) \
     ( ( EXTERNAL_FLASH_ADDRESS_START <= addr ) && ( EXTERNAL_FLASH_ADDRESS_END > addr ) )    \
-    
+/* 内部Flash地址范围判断 */
 #define _IS_INTERNAL_FLASH( addr ) \
     ( ( INTERNAL_FLASH_ADDRESS_START <= addr ) && ( INTERNAL_FLASH_ADDRESS_END > addr ) )    \
-    
+/* 内部Ram地址范围判断 */    
 #define _IS_INTERNAL_RAM( addr ) \
     ( ( INTERNAL_RAM_ADDRESS_START <= addr ) && ( INTERNAL_RAM_ADDRESS_END > addr ) )    \
-      
-    
-
 
 #if EIOT_SYSTEM_USE_OS
 libcOsMutex_t   s_flash_mutex;
@@ -82,7 +75,7 @@ void PerifFlash_Init( void )
 #endif
     sfud_init();
 }
-    
+
 void PerifFlash_Write( PerifFlashType sel, uint32_t addr, uint32_t size, uint8_t* data )
 {
     if ( sel == PERIF_FLASH_NOR_FLASH ) {

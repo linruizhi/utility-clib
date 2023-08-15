@@ -1,7 +1,7 @@
-#ifndef __EIOT_DEFINE_H__
-#define __EIOT_DEFINE_H__
+#ifndef __UTILITY_DEFINE_H__
+#define __UTILITY_DEFINE_H__
 
 
 
-#endif
+#endif//__UTILITY_DEFINE_H__
 

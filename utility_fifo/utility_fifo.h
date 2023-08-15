@@ -1,9 +1,6 @@
 
-
 #ifndef _EIOT_FIRST_IN_FIRST_OUT_H
 #define _EIOT_FIRST_IN_FIRST_OUT_H
-
-#include "libarch.h"
 
 #if EIOT_LIB_FIFO
 

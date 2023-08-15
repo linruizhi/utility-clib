@@ -1,5 +1,5 @@
 
-#include <eiot_fifo/eiot_fifo.h>
+#include "utility_fifo.h"
 
 #if EIOT_LIB_FIFO
 
