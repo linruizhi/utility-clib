@@ -1,5 +1,5 @@
-#ifndef __EIOT_ENUM_H__
-#define __EIOT_ENUM_H__
+#ifndef __UTILITY_ENUM_H__
+#define __UTILITY_ENUM_H__
 
 /* 数据操作权限,按位操作 */
 typedef enum
@@ -19,4 +19,4 @@ typedef enum
 }datalimit_em;
 
 
-#endif //__EIOT_ENUM_H__
+#endif //__UTILITY_ENUM_H__
