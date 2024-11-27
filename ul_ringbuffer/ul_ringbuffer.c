@@ -58,7 +58,7 @@ ul_ringbuffer_t* ul_ringbuffer_create( ul_rb_attr_t attr  )
  */
 int ul_ringbuffer_init( ul_ringbuffer_t *rb, ul_rb_attr_t attr )
 {
-    int ret = INVAILD;
+    int ret = UL_INVAILD;
 
     if( rb && attr.element_size && attr.capacity )
     {
@@ -74,11 +74,11 @@ int ul_ringbuffer_init( ul_ringbuffer_t *rb, ul_rb_attr_t attr )
             rb->element_size = attr.element_size;
             rb->head = rb->tail = rb->buff;
 
-            ret = SUCCESS;
+            ret = UL_SUCCESS;
         }
         else
         {
-            ret = NOMEMARY;
+            ret = UL_NOMEMARY;
         }
     }
 
@@ -125,7 +125,7 @@ int ul_ringbuffer_del_elements( ul_ringbuffer_t *rb, uint8_t count )
     
     if( rb->head == rb->tail )
     {
-        ret = INVAILD;
+        ret = UL_INVAILD;
     }
     else
     {
@@ -141,7 +141,7 @@ int ul_ringbuffer_del_elements( ul_ringbuffer_t *rb, uint8_t count )
         }
     }
 
-    return SUCCESS;
+    return UL_SUCCESS;
 }
 
 
@@ -150,7 +150,7 @@ int32_t ul_ringbuffer_add_elements( ul_ringbuffer_t *rb, void* elems, uint8_t co
     int copySz = 0,ret,all_size,lastSz,freeSz;
 
     if( elems == NULL || rb == NULL )
-        return INVAILD;
+        return UL_INVAILD;
 
     all_size = count * rb->element_size;
 

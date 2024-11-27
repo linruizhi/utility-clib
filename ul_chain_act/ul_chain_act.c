@@ -67,7 +67,7 @@ int ul_chain_act_release( ul_chain_t* node )
         libc_free( node );
     }
 
-    return SUCCESS;
+    return UL_SUCCESS;
 }
 
 /**
@@ -103,7 +103,7 @@ int ul_chain_act_del( ul_chain_t** head, ul_chain_t** tail, ul_chain_t* node ){
  */
 int ul_chain_act_set_status( ul_chain_t* head, uint8_t act ,ul_act_status sta  )
 {
-    int ret = SUCCESS;
+    int ret = UL_SUCCESS;
     ul_chain_t* tmp;
     ul_act_t* detail;
 
@@ -172,11 +172,11 @@ int ul_chain_act_callback( ul_chain_t** head, ul_act_t act )
 {
     if ( act.callback != NULL ) {
         if ( act.sta == UL_ACT_FINISHED ) {
-            act.callback( head, act.arg, SUCCESS ); //执行成功
+            act.callback( head, act.arg, UL_SUCCESS ); //执行成功
         } else if ( act.sta == UL_ACT_TIMEOUT_TOO_MANY ) {
-            act.callback( head, act.arg, TIMEOUT ); //超时
+            act.callback( head, act.arg, UL_TIMEOUT ); //超时
         } else if ( act.sta == UL_ACT_FAILED ) {
-            act.callback( head, act.arg, INVAILD ); //执行错误
+            act.callback( head, act.arg, UL_INVAILD ); //执行错误
         }
     }
 }
@@ -192,7 +192,7 @@ int ul_chain_act_callback( ul_chain_t** head, ul_act_t act )
 int ul_chain_act_try_remove( ul_chain_t** head, ul_chain_t** end, ul_chain_t* node )
 {
     ul_act_t* act;
-    int ret = NOVALUE;
+    int ret = UL_NOVALUE;
 
     if( node && node->detail )
     {
@@ -203,7 +203,7 @@ int ul_chain_act_try_remove( ul_chain_t** head, ul_chain_t** end, ul_chain_t* no
             if( act->sta == UL_ACT_FINISHED || act->sta == UL_ACT_TIMEOUT_TOO_MANY || act->sta == UL_ACT_FAILED|| act->sta == UL_ACT_RESEND ){
                 ul_chain_act_del( head, end, node);
                 ul_chain_act_release( node );
-                ret = SUCCESS;
+                ret = UL_SUCCESS;
             }
         }
     }
@@ -252,7 +252,7 @@ int ul_chain_act_poll( ul_chain_t** head, ul_chain_t** end )
 
         ul_chain_act_callback( head, *detail );
 
-        if( ul_chain_act_try_remove( head, end, tmp) == SUCCESS )
+        if( ul_chain_act_try_remove( head, end, tmp) == UL_SUCCESS )
         {
             //清除成功后,tmp地址的内容被执行为NULL
             //这里是跳出操作
