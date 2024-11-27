@@ -10,6 +10,16 @@ void* libc_malloc_copy( uint8_t* src, uint16_t len );
 
 
 #if UTILITY_SYSTEM_USE_OS
+#include "semphr.h"
+
+typedef SemaphoreHandle_t   libcOsMutex_t; //定义互斥量类型
+
+libcOsMutex_t* libcOsMutexNew( void );
+int libcOsMutexLock( libcOsMutex_t* mutex );
+int libcOsMutexTryLock( libcOsMutex_t* mutex );
+int libcOsMutexUnlock( libcOsMutex_t* mutex );
+int libcOsMutexDelete( libcOsMutex_t* mutex );
+
 void libcOsDelayms( int ms );
 #endif  //UTILITY_SYSTEM_USE_OS
 
