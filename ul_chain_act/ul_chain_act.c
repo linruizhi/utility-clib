@@ -2,16 +2,17 @@
  * @Author: linruizhi
  * @Description: 
  * @Date: 2024-11-22 10:33:30
- * @LastEditors: linruizhi
- * @LastEditTime: 2024-11-22 14:45:47
+ * @LastEditors: linruizhi1124@outlook.com linruizhi1124@outlook.com
+ * @LastEditTime: 2024-11-28 17:46:53
  * @Copyright: Copyright (c) 2024 by Awaretec Co., Ltd., All Rights Reserved. 
  */
 
 #include "ul_chain_act.h"
 
 /**
- * @function: 
- * @description: 
+ * @description: 创建act chain 节点
+ * @param {ul_act_attr_t} attr
+ * @param {ul_act_callback} fn
  * @return {*}
  */
 ul_chain_t* ul_chain_act_create( ul_act_attr_t attr, ul_act_callback fn )
@@ -21,6 +22,7 @@ ul_chain_t* ul_chain_act_create( ul_act_attr_t attr, ul_act_callback fn )
     node = ul_chain_create();
     if( node != NULL )
     {
+        //构建act
         node->detail = libc_malloc( sizeof( ul_act_t ));
         if( node->detail != NULL )
         {
@@ -30,8 +32,8 @@ ul_chain_t* ul_chain_act_create( ul_act_attr_t attr, ul_act_callback fn )
             (( ul_act_t* )node->detail)->flags = attr.flags;
             (( ul_act_t* )node->detail)->timeout_ms = attr.timeout_ms;
             (( ul_act_t* )node->detail)->callback = fn;
-        }
-        else{
+        }else{
+            //构建act-失败
             ul_chain_release( node );
             node = NULL;
         }
@@ -42,7 +44,7 @@ ul_chain_t* ul_chain_act_create( ul_act_attr_t attr, ul_act_callback fn )
 
 /**
  * @function: 
- * @description: 
+ * @description: 释放act节点
  * @param {ul_chain_t*} node
  * @return {*}
  */
@@ -57,13 +59,15 @@ int ul_chain_act_release( ul_chain_t* node )
             detail = node->detail;
             if( detail->data != NULL )
             {
+                //释放act内容
                 libc_free( detail->data );
                 detail->data = NULL;
             }
+            //释放act结构
             libc_free( detail );
             node->detail = NULL;
         }
-
+        //释放节点
         libc_free( node );
     }
 
@@ -72,7 +76,7 @@ int ul_chain_act_release( ul_chain_t* node )
 
 /**
  * @function: 
- * @description: 
+ * @description: 将节点插入链表
  * @param {ul_chain_t**} head
  * @param {ul_chain_t**} tail
  * @param {ul_chain_t*} node
@@ -84,7 +88,7 @@ int ul_chain_act_add( ul_chain_t** head, ul_chain_t** tail,ul_chain_t* node ){
 
 /**
  * @function: 
- * @description: 
+ * @description: 从链表中删除节点
  * @param {ul_chain_t**} head
  * @param {ul_chain_t**} tail
  * @param {ul_chain_t*} node
@@ -96,7 +100,7 @@ int ul_chain_act_del( ul_chain_t** head, ul_chain_t** tail, ul_chain_t* node ){
 
 /**
  * @function: 
- * @description: 
+ * @description: 设置act状态
  * @param {ul_chain_t*} head
  * @param {uint8_t} act
  * @return {*}
@@ -126,7 +130,7 @@ int ul_chain_act_set_status( ul_chain_t* head, uint8_t act ,ul_act_status sta  )
 
 /**
  * @function: 
- * @description: 
+ * @description: 获取可发送的act结构
  * @param {ul_chain_t*} head
  * @return {*}
  */
@@ -137,21 +141,26 @@ ul_act_t* ul_act_list_get_valid_act( ul_chain_t* head )
     
     for ( tmp = head; tmp != NULL; tmp = tmp->next ) 
     {
-        detail = head->detail;
+        detail = head->detail;  //获取act
 
+        //存在act处于 等待响应状态 或者 状态，跳出
         if ( detail->sta == UL_ACT_WAITING_ACK || detail->sta == UL_ACT_HOLDING ) {
             tmp = NULL;
             break;
         }
 
+        //act处于 可发送状态
         if ( detail->sta == UL_ACT_QUEUING )
         {
+            //判断该act的标志，变更执行后状态
             if( detail->flags & ( 1 << UL_ACT_FLAG_WAITACK ) )
             {
+                //需要等待响应
                 detail->sta = UL_ACT_WAITING_ACK;
             }
             else
             {
+                //不需要等待响应
                 detail->sta = UL_ACT_FINISHED;
             }
             break;
@@ -163,7 +172,7 @@ ul_act_t* ul_act_list_get_valid_act( ul_chain_t* head )
 
 /**
  * @function: 
- * @description: 
+ * @description: act状态回调函数
  * @param {ul_chain_t**} head
  * @param {ul_act_t*} act
  * @return {*}
@@ -183,7 +192,7 @@ int ul_chain_act_callback( ul_chain_t** head, ul_act_t act )
 
 /**
  * @function: 
- * @description: 
+ * @description: 尝试移除指定节点，并进行节点释放
  * @param {ul_chain_t**} head
  * @param {ul_chain_t**} end
  * @param {ul_chain_t*} node
@@ -196,11 +205,14 @@ int ul_chain_act_try_remove( ul_chain_t** head, ul_chain_t** end, ul_chain_t* no
 
     if( node && node->detail )
     {
-        act = node->detail;
+        act = node->detail; //获取act节点
 
+        //检查act是否需要重发
         if( !( act->flags & (1 << UL_ACT_FLAG_PERIODIC)) )
         {
-            if( act->sta == UL_ACT_FINISHED || act->sta == UL_ACT_TIMEOUT_TOO_MANY || act->sta == UL_ACT_FAILED|| act->sta == UL_ACT_RESEND ){
+            //不需要重发，判断当前act状态
+            //act结束状态（finish、timeout、failed），进行act释放
+            if( act->sta == UL_ACT_FINISHED || act->sta == UL_ACT_TIMEOUT_TOO_MANY || act->sta == UL_ACT_FAILED ){
                 ul_chain_act_del( head, end, node);
                 ul_chain_act_release( node );
                 ret = UL_SUCCESS;
@@ -214,11 +226,11 @@ int ul_chain_act_try_remove( ul_chain_t** head, ul_chain_t** end, ul_chain_t* no
 
  /**
   * @function: 
-  * @description: 
+  * @description: 循环执行act，应用接口
   * @param {bleh_act_t*} root
   * @return {*}
   */
-int ul_chain_act_poll( ul_chain_t** head, ul_chain_t** end )
+int ul_chain_act_poll( ul_chain_t** head, ul_chain_t** end, uint32_t time_ms )
 {
     int ret;
     ul_chain_t* tmp;
@@ -226,32 +238,37 @@ int ul_chain_act_poll( ul_chain_t** head, ul_chain_t** end )
 
     for ( tmp = *head; tmp != NULL; tmp = tmp->next )
     {
-        detail = tmp->detail;
+        detail = tmp->detail; //获取act
 
         if( detail == NULL )
         {
+            //act节点为空，跳过(异常)
             continue;
         }
         
-        if( detail->sta == UL_ACT_WAITING_ACK )
+        if( detail->sta == UL_ACT_WAITING_ACK )//等待响应
         {
-            if( detail->trig_time + detail->timeout_ms > 0 )
+            //act等待超时，trig_time（触发时间），timeout_ms（等待阈值），当前时间
+            if( detail->trig_time + detail->timeout_ms > time_ms )
             {
-                detail->delayed_cnt ++;
-                if( detail->delayed_max <= detail->delayed_cnt )
+                detail->delayed_cnt ++; //超时计数
+                if( detail->delayed_max <= detail->delayed_cnt )    //判断超时容忍
                 {
+                    //标记act超时
                     detail->sta = UL_ACT_TIMEOUT_TOO_MANY;
                 }
                 else
                 {
-                    //重传
+                    //在超时容忍范围内，重传
                     detail->sta = UL_ACT_QUEUING;
                 }
             }
         }
 
+        //act回调
         ul_chain_act_callback( head, *detail );
 
+        //尝试清除act
         if( ul_chain_act_try_remove( head, end, tmp) == UL_SUCCESS )
         {
             //清除成功后,tmp地址的内容被执行为NULL
