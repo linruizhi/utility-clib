@@ -2,15 +2,15 @@
  * @Author: linruizhi
  * @Description: 
  * @Date: 2024-11-22 10:12:59
- * @LastEditors: linruizhi
- * @LastEditTime: 2024-11-22 15:24:01
+ * @LastEditors: linruizhi1124@outlook.com linruizhi1124@outlook.com
+ * @LastEditTime: 2024-11-28 17:28:59
  * @Copyright: Copyright (c) 2024 by Awaretec Co., Ltd., All Rights Reserved. 
  */
 #include "libarch.h"
 #include "ul_chain.h"
 /**
  * @function: 
- * @description: 
+ * @description: 创建节点
  * @return {*}
  */
 ul_chain_t* ul_chain_create( void )
@@ -28,6 +28,11 @@ ul_chain_t* ul_chain_create( void )
     return tmp;
 }
 
+/**
+ * @description: 释放节点
+ * @param {ul_chain_t*} node
+ * @return {*}
+ */
 void ul_chain_release( ul_chain_t* node )
 {
     libc_free( node );
