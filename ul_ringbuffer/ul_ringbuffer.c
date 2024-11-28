@@ -1,9 +1,9 @@
 /*
  * @Author: linruizhi
- * @Description: 
+ * @Description: 元素大小固定，会覆盖原始数据，元素格式不定
  * @Date: 2024-11-22 17:17:33
  * @LastEditors: linruizhi1124@outlook.com linruizhi1124@outlook.com
- * @LastEditTime: 2024-11-28 15:41:18
+ * @LastEditTime: 2024-11-28 15:59:46
  * @Copyright: Copyright (c) 2024 by Awaretec Co., Ltd., All Rights Reserved. 
  */
 #include <stdio.h>
@@ -41,7 +41,7 @@ ul_ringbuffer_t* ul_ringbuffer_create( ul_rb_attr_t attr )
         if( rb )
         {
             rb->buff = attr.buff;
-            rb->buff = attr.capacity;
+            rb->capacity = attr.capacity;
             rb->element_size = attr.element_size;
             rb->head = rb->tail = rb->buff;
             rb->buff_size = attr.capacity*attr.element_size;
