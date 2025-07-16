@@ -1,40 +1,43 @@
 /*
  * @Author: linruizhi
- * @Description: 
+ * @Description:
  * @Date: 2024-11-22 10:33:30
- * @LastEditors: linruizhi1124@outlook.com linruizhi1124@outlook.com
- * @LastEditTime: 2024-11-28 17:46:53
- * @Copyright: Copyright (c) 2024 by Awaretec Co., Ltd., All Rights Reserved. 
+ * @LastEditors: linruizhi
+ * @LastEditTime: 2025-01-03 16:08:30
+ * @Copyright: Copyright (c) 2024 by Awaretec Co., Ltd., All Rights Reserved.
  */
-
+// #include "vprint.h"
 #include "ul_chain_act.h"
 
 /**
- * @description: 创建act chain 节点
- * @param {ul_act_attr_t} attr
- * @param {ul_act_callback} fn
+ * @function:
+ * @description:
  * @return {*}
  */
-ul_chain_t* ul_chain_act_create( ul_act_attr_t attr, ul_act_callback fn )
+ul_chain_t *ul_chain_act_create(ul_act_attr_t attr)
 {
-    ul_chain_t* node;
+    ul_chain_t *node;
 
     node = ul_chain_create();
-    if( node != NULL )
+    if (node != NULL)
     {
-        //构建act
-        node->detail = libc_malloc( sizeof( ul_act_t ));
-        if( node->detail != NULL )
+        node->detail = libc_malloc(sizeof(ul_act_t));
+        if (node->detail != NULL)
         {
-            (( ul_act_t* )node->detail)->act = attr.act;
-            (( ul_act_t* )node->detail)->data = attr.data;
-            (( ul_act_t* )node->detail)->len = attr.len;
-            (( ul_act_t* )node->detail)->flags = attr.flags;
-            (( ul_act_t* )node->detail)->timeout_ms = attr.timeout_ms;
-            (( ul_act_t* )node->detail)->callback = fn;
-        }else{
-            //构建act-失败
-            ul_chain_release( node );
+            ((ul_act_t *)node->detail)->act = attr.act;
+            ((ul_act_t *)node->detail)->data = attr.data;
+            ((ul_act_t *)node->detail)->len = attr.len;
+            ((ul_act_t *)node->detail)->flags = attr.flags;
+            ((ul_act_t *)node->detail)->timeout_ms = attr.timeout_ms;
+            ((ul_act_t *)node->detail)->delayed_max = attr.delayed_max;
+            ((ul_act_t *)node->detail)->delayed_cnt = 0;
+            ((ul_act_t *)node->detail)->callback = attr.callback;
+            ((ul_act_t *)node->detail)->sta = UL_ACT_QUEUING;
+            ((ul_act_t *)node->detail)->arg = attr.arg;
+        }
+        else
+        {
+            ul_chain_release(node);
             node = NULL;
         }
     }
@@ -43,85 +46,93 @@ ul_chain_t* ul_chain_act_create( ul_act_attr_t attr, ul_act_callback fn )
 }
 
 /**
- * @function: 
- * @description: 释放act节点
+ * @function:
+ * @description:
  * @param {ul_chain_t*} node
  * @return {*}
  */
-int ul_chain_act_release( ul_chain_t* node )
+int ul_chain_act_release(ul_chain_t *node)
 {
-    ul_act_t* detail;
+    ul_act_t *detail;
 
-    if( node != NULL)
+    if (node != NULL)
     {
-        if( node->detail != NULL )
+        if (node->detail != NULL)
         {
             detail = node->detail;
-            if( detail->data != NULL )
+            if (detail->data != NULL)
             {
-                //释放act内容
-                libc_free( detail->data );
+                libc_free(detail->data);
                 detail->data = NULL;
             }
-            //释放act结构
-            libc_free( detail );
+            if (detail->arg != NULL)
+            {
+                libc_free(detail->arg);
+                detail->arg = NULL;
+            }
+            libc_free(detail);
             node->detail = NULL;
         }
-        //释放节点
-        libc_free( node );
+
+        libc_free(node);
     }
 
-    return UL_SUCCESS;
+    return UL_ERR_SUCCESS;
 }
 
 /**
- * @function: 
- * @description: 将节点插入链表
+ * @function:
+ * @description:
  * @param {ul_chain_t**} head
  * @param {ul_chain_t**} tail
  * @param {ul_chain_t*} node
  * @return {*}
  */
-int ul_chain_act_add( ul_chain_t** head, ul_chain_t** tail,ul_chain_t* node ){
-    ul_chain_add( head, tail, node );
+int ul_chain_act_add(ul_act_chain_t *chain, ul_chain_t *node)
+{
+    return ul_chain_add(&chain->head, &chain->tail, node);
 }
 
 /**
- * @function: 
- * @description: 从链表中删除节点
+ * @function:
+ * @description:
  * @param {ul_chain_t**} head
  * @param {ul_chain_t**} tail
  * @param {ul_chain_t*} node
  * @return {*}
  */
-int ul_chain_act_del( ul_chain_t** head, ul_chain_t** tail, ul_chain_t* node ){
-    ul_chain_del( head, tail, node );
+static int ul_chain_act_del(ul_act_chain_t *chain, ul_chain_t *node)
+{
+    return ul_chain_del(&chain->head, &chain->tail, node);
 }
 
 /**
- * @function: 
- * @description: 设置act状态
+ * @function:
+ * @description:
  * @param {ul_chain_t*} head
  * @param {uint8_t} act
  * @return {*}
  */
-int ul_chain_act_set_status( ul_chain_t* head, uint8_t act ,ul_act_status sta  )
+ul_errcode_t ul_chain_act_check_existed(ul_chain_t *head, uint8_t act)
 {
-    int ret = UL_SUCCESS;
-    ul_chain_t* tmp;
-    ul_act_t* detail;
+    ul_errcode_t ret = UL_ERR_NOVALUE;
+    ul_chain_t *tmp;
+    ul_act_t *detail;
 
-    for( tmp = head; tmp != NULL; tmp = tmp->next )
+    for (tmp = head; tmp != NULL; tmp = tmp->next)
     {
         detail = tmp->detail;
-        if( detail != NULL )
+        if (detail != NULL)
         {
-            if( detail->act == act )
+            if (detail->act == act)
             {
-                detail->sta = sta;
-                detail->delayed_cnt = 0;
+                ret = UL_ERR_SUCCESS;
+                break;
             }
-            break;
+        }
+        else
+        {
+            ret = UL_ERR_INVAILD;
         }
     }
 
@@ -129,151 +140,295 @@ int ul_chain_act_set_status( ul_chain_t* head, uint8_t act ,ul_act_status sta  )
 }
 
 /**
- * @function: 
- * @description: 获取可发送的act结构
+ * @function:
+ * @description:
+ * @param {ul_chain_t*} head
+ * @param {uint8_t} act
+ * @return {*}
+ */
+int ul_chain_act_set_status(ul_chain_t *head, uint8_t act, ul_act_status sta)
+{
+    int ret = UL_ERR_NOVALUE;
+    ul_chain_t *tmp;
+    ul_act_t *detail;
+
+    for (tmp = head; tmp != NULL; tmp = tmp->next)
+    {
+        detail = tmp->detail;
+        if (detail != NULL)
+        {
+            if (detail->act == act)
+            {
+                detail->sta = sta;
+                detail->delayed_cnt = 0;
+                ret = UL_ERR_SUCCESS;
+                break;
+            }
+        }
+        else
+        {
+            ret = UL_ERR_INVAILD;
+        }
+    }
+
+    return ret;
+}
+
+/**
+ * @function:
+ * @description:
+ * @param {ul_chain_t*} head
+ * @param {uint8_t} act
+ * @param {ul_act_status} sta
+ * @return {*}
+ */
+ul_errcode_t ul_chain_act_get_arg(ul_chain_t *head, uint8_t act, void **arg)
+{
+    ul_errcode_t ret = UL_ERR_NOVALUE;
+    ul_chain_t *tmp;
+    ul_act_t *detail;
+
+    for (tmp = head; tmp != NULL; tmp = tmp->next)
+    {
+        detail = tmp->detail;
+        if (detail != NULL)
+        {
+            if (detail->act == act)
+            {
+                *arg = detail->arg;
+
+                ret = UL_ERR_SUCCESS;
+                break;
+            }
+        }
+        else
+        {
+            ret = UL_ERR_INVAILD;
+        }
+    }
+
+    return ret;
+}
+
+/**
+ * @function:
+ * @description:
  * @param {ul_chain_t*} head
  * @return {*}
  */
-ul_act_t* ul_act_list_get_valid_act( ul_chain_t* head )
+ul_act_t *ul_act_list_get_valid_act(ul_act_chain_t chain, uint64_t time_ms, int *ret)
 {
-    ul_chain_t* tmp;
-    ul_act_t* detail = NULL;
-    
-    for ( tmp = head; tmp != NULL; tmp = tmp->next ) 
-    {
-        detail = head->detail;  //获取act
+    ul_chain_t *tmp;
+    ul_act_t *detail = NULL;
 
-        //存在act处于 等待响应状态 或者 状态，跳出
-        if ( detail->sta == UL_ACT_WAITING_ACK || detail->sta == UL_ACT_HOLDING ) {
-            tmp = NULL;
+    for (tmp = chain.head; tmp != NULL; tmp = tmp->next)
+    {
+        if (((ul_act_t *)tmp->detail)->sta == UL_ACT_WAITING_ACK)
+        {
+            detail = NULL;
+            *ret = UL_ERR_BUSY;
             break;
         }
 
-        //act处于 可发送状态
-        if ( detail->sta == UL_ACT_QUEUING )
+        if (((ul_act_t *)tmp->detail)->sta == UL_ACT_QUEUING)
         {
-            //判断该act的标志，变更执行后状态
-            if( detail->flags & ( 1 << UL_ACT_FLAG_WAITACK ) )
+            if (((ul_act_t *)tmp->detail)->flags & (1 << UL_ACT_FLAG_WAITACK))
             {
-                //需要等待响应
-                detail->sta = UL_ACT_WAITING_ACK;
+                ((ul_act_t *)tmp->detail)->sta = UL_ACT_WAITING_ACK;
+            }
+            else if (((ul_act_t *)tmp->detail)->flags & (1 << UL_ACT_FLAG_PERIODIC))
+            {
+                ((ul_act_t *)tmp->detail)->sta = UL_ACT_DELAYED; // 等待下个周期
             }
             else
             {
-                //不需要等待响应
-                detail->sta = UL_ACT_FINISHED;
+                ((ul_act_t *)tmp->detail)->sta = UL_ACT_FINISHED;
             }
+            // 调整触发时间
+            ((ul_act_t *)tmp->detail)->trig_time = time_ms;
+
+            detail = tmp->detail;
+            *ret = UL_ERR_BUSY;
             break;
         }
     }
+
+    *ret = UL_ERR_NOVALUE;
 
     return detail;
 }
 
 /**
- * @function: 
- * @description: act状态回调函数
+ * @function:
+ * @description:
  * @param {ul_chain_t**} head
  * @param {ul_act_t*} act
  * @return {*}
  */
-int ul_chain_act_callback( ul_chain_t** head, ul_act_t act )
+static int ul_chain_act_callback(ul_act_chain_t *chain, ul_act_t *act)
 {
-    if ( act.callback != NULL ) {
-        if ( act.sta == UL_ACT_FINISHED ) {
-            act.callback( head, act.arg, UL_SUCCESS ); //执行成功
-        } else if ( act.sta == UL_ACT_TIMEOUT_TOO_MANY ) {
-            act.callback( head, act.arg, UL_TIMEOUT ); //超时
-        } else if ( act.sta == UL_ACT_FAILED ) {
-            act.callback( head, act.arg, UL_INVAILD ); //执行错误
-        }
+    if (act->callback)
+    {
+        act->callback(chain, act); // 执行成功
     }
+    return UL_ERR_SUCCESS;
 }
 
 /**
- * @function: 
- * @description: 尝试移除指定节点，并进行节点释放
+ * @function:
+ * @description:
  * @param {ul_chain_t**} head
  * @param {ul_chain_t**} end
  * @param {ul_chain_t*} node
  * @return {*}
  */
-int ul_chain_act_try_remove( ul_chain_t** head, ul_chain_t** end, ul_chain_t* node )
+static int ul_chain_act_try_remove(ul_act_chain_t *chain, ul_chain_t *node)
 {
-    ul_act_t* act;
-    int ret = UL_NOVALUE;
+    ul_act_t *act;
+    int ret = UL_ERR_NOVALUE;
 
-    if( node && node->detail )
+    if (node && node->detail)
     {
-        act = node->detail; //获取act节点
+        act = node->detail;
 
-        //检查act是否需要重发
-        if( !( act->flags & (1 << UL_ACT_FLAG_PERIODIC)) )
+        switch (act->sta)
         {
-            //不需要重发，判断当前act状态
-            //act结束状态（finish、timeout、failed），进行act释放
-            if( act->sta == UL_ACT_FINISHED || act->sta == UL_ACT_TIMEOUT_TOO_MANY || act->sta == UL_ACT_FAILED ){
-                ul_chain_act_del( head, end, node);
-                ul_chain_act_release( node );
-                ret = UL_SUCCESS;
+        case UL_ACT_FINISHED:
+        case UL_ACT_TIMEOUT_TOO_MANY:
+        case UL_ACT_FAILED:
+        case UL_ACT_ABANDON:
+            if (act->flags & (1 << UL_ACT_FLAG_PERIODIC))
+            {
+                ret = UL_ERR_FALSE; // 循环指令，禁止删除
             }
+            else
+            {
+                ret = ul_chain_act_del(chain, node);
+                ul_chain_act_release(node);
+            }
+            break;
+        default:
+            ret = UL_ERR_STATUS_ERROR;
+            break;
         }
     }
-    
+
     return ret;
 }
 
-
- /**
-  * @function: 
-  * @description: 循环执行act，应用接口
-  * @param {bleh_act_t*} root
-  * @return {*}
-  */
-int ul_chain_act_poll( ul_chain_t** head, ul_chain_t** end, uint32_t time_ms )
+/**
+ * @function:
+ * @description:
+ * @return {*}
+ */
+int ul_chain_act_set_all_pause(ul_act_chain_t chain)
 {
-    int ret;
-    ul_chain_t* tmp;
-    ul_act_t* detail;
+    int ret = UL_ERR_SUCCESS;
+    ul_chain_t *tmp;
 
-    for ( tmp = *head; tmp != NULL; tmp = tmp->next )
+    for (tmp = chain.head; tmp != NULL; tmp = tmp->next)
     {
-        detail = tmp->detail; //获取act
-
-        if( detail == NULL )
+        if ((ul_act_t *)tmp->detail == NULL) // 异常
         {
-            //act节点为空，跳过(异常)
             continue;
         }
-        
-        if( detail->sta == UL_ACT_WAITING_ACK )//等待响应
+
+        ((ul_act_t *)tmp->detail)->sta = UL_ACT_PAUSING;
+    }
+    return ret;
+}
+
+/**
+ * @function:
+ * @description:
+ * @param {ul_chain_t**} head
+ * @return {*}
+ */
+int ul_chain_act_set_all_resume(ul_act_chain_t chain)
+{
+    int ret = UL_ERR_SUCCESS;
+    ul_chain_t *tmp;
+
+    for (tmp = chain.head; tmp != NULL; tmp = tmp->next)
+    {
+        if ((ul_act_t *)tmp->detail == NULL) // 异常
         {
-            //act等待超时，trig_time（触发时间），timeout_ms（等待阈值），当前时间
-            if( detail->trig_time + detail->timeout_ms > time_ms )
+            // ul_printf( LOG_ERROR, "chain node detail is NULL" );
+            continue;
+        }
+
+        ((ul_act_t *)tmp->detail)->sta = UL_ACT_QUEUING;
+    }
+    return ret;
+}
+
+/**
+ * @function:
+ * @description:
+ * @param {bleh_act_t*} root
+ * @return {*}
+ */
+int ul_chain_act_poll(ul_act_chain_t *chain, uint64_t time_ms)
+{
+    int ret = UL_ERR_NOVALUE, i = 0;
+    ul_chain_t *tmp;
+    // ul_act_t* act;
+
+    for (tmp = chain->head; tmp != NULL; tmp = tmp->next)
+    {
+        i++;
+        if ((ul_act_t *)tmp->detail == NULL) // 异常
+        {
+            continue;
+        }
+
+        // 该指令被暂停
+        if (((ul_act_t *)tmp->detail)->sta == UL_ACT_PAUSING)
+        {
+            continue;
+        }
+
+        ret = UL_ERR_BUSY;
+
+        // ul_printf(LOG_DEBUG, "chain poll now act id[%d],sta[%d],act[%x],arg[%d]", i, ((ul_act_t*)tmp->detail)->sta, ((ul_act_t*)tmp->detail)->act, ((ul_act_t*)tmp->detail)->arg );
+
+        if (((ul_act_t *)tmp->detail)->sta == UL_ACT_DELAYED)
+        {
+            if (time_ms - ((ul_act_t *)tmp->detail)->trig_time >= ((ul_act_t *)tmp->detail)->timeout_ms) // 判断超时
             {
-                detail->delayed_cnt ++; //超时计数
-                if( detail->delayed_max <= detail->delayed_cnt )    //判断超时容忍
+                ((ul_act_t *)tmp->detail)->sta = UL_ACT_QUEUING;
+                // ul_printf(LOG_DEBUG,"chain[%d] node[%d] act[%d] timeout,resend", chain, tmp, ((ul_act_t*)tmp->detail)->act );
+            }
+        }
+
+        if (((ul_act_t *)tmp->detail)->sta == UL_ACT_WAITING_ACK)
+        {
+            if (time_ms - ((ul_act_t *)tmp->detail)->trig_time >= ((ul_act_t *)tmp->detail)->timeout_ms) // 判断超时
+            {
+                ((ul_act_t *)tmp->detail)->delayed_cnt++;
+                if (((ul_act_t *)tmp->detail)->flags & (1 << UL_ACT_FLAG_MUSTOK) ||
+                    ((ul_act_t *)tmp->detail)->delayed_max >= ((ul_act_t *)tmp->detail)->delayed_cnt)
                 {
-                    //标记act超时
-                    detail->sta = UL_ACT_TIMEOUT_TOO_MANY;
+                    // 重传
+                    ((ul_act_t *)tmp->detail)->sta = UL_ACT_QUEUING;
+                    // ul_printf(LOG_DEBUG, "node[%d] act[%x] arg[%d] timeout resend", tmp, ((ul_act_t*)tmp->detail)->act, ((ul_act_t*)tmp->detail)->arg );
                 }
                 else
                 {
-                    //在超时容忍范围内，重传
-                    detail->sta = UL_ACT_QUEUING;
+                    ((ul_act_t *)tmp->detail)->sta = UL_ACT_TIMEOUT_TOO_MANY;
+                    printf("node[%d] act[%x] timeout too many[%d/%d]", tmp, ((ul_act_t *)tmp->detail)->act, ((ul_act_t *)tmp->detail)->delayed_cnt, ((ul_act_t *)tmp->detail)->delayed_max);
                 }
             }
         }
 
-        //act回调
-        ul_chain_act_callback( head, *detail );
+        ul_chain_act_callback(chain, (ul_act_t *)tmp->detail);
 
-        //尝试清除act
-        if( ul_chain_act_try_remove( head, end, tmp) == UL_SUCCESS )
+        ret = ul_chain_act_try_remove(chain, tmp);
+        if (ret == UL_ERR_SUCCESS)
         {
-            //清除成功后,tmp地址的内容被执行为NULL
-            //这里是跳出操作
-            //可以更换为手动更新tmp
+            // ul_printf(LOG_DEBUG, "chain[%d] remove a node[%d]", chain, tmp );
+            // 清除成功后,tmp地址的内容被执行为NULL
+            // 这里是跳出操作,但是可以手动更新tmp的值使得继续处理
             break;
         }
     }
